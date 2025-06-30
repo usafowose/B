@@ -1,0 +1,30 @@
+```puml
+@startuml
+!define RECTANGLE class
+
+RECTANGLE "User" as User {
+}
+
+RECTANGLE "Birthday Entry" as BirthdayEntry {
+}
+
+RECTANGLE "Birthday List" as BirthdayList {
+}
+
+RECTANGLE "Countdown Timer" as CountdownTimer {
+}
+
+User --> (1) : "Add Birthday"
+(1) --> BirthdayEntry : "Create Entry"
+BirthdayEntry --> BirthdayList : "Store Entry"
+
+User --> (2) : "View Upcoming Birthdays"
+(2) --> BirthdayList : "Retrieve Entries"
+BirthdayList --> CountdownTimer : "Generate Sorted Timers"
+
+User --> (3) : "Edit/Delete Entries"
+(3) --> BirthdayEntry : "Modify/Delete Entry"
+BirthdayEntry --> BirthdayList : "Update List"
+
+@enduml
+```
