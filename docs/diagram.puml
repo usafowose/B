@@ -1,30 +1,57 @@
 ```puml
 @startuml
-!define RECTANGLE class
 
-RECTANGLE "User" as User {
-}
+|Frontend (React)|
+start
+:User Action: Authenticated Admin clicks "+ Add" on "/";
+:Show <AddBirthdayForm> modal with empty input fields;
+:Admin fills in First Name, Last Name, Birthdate, Time Zone, Trivia Question, Trivia Answer;
+:Click "Save";
 
-RECTANGLE "Birthday Entry" as BirthdayEntry {
-}
+if (Validation (frontend)) then (valid)
+    :HTTP Request (frontend);
+    :POST /api/personal/createBirthday;
+    :Content-Type: application/json;
+    :{
+    :  "firstName": "string",
+    :  "lastName":  "string",
+    :  "birthdate": "YYYY-MM-DD",
+    :  "timeZone":  "America/New_York",
+    :  "triviaQuestion": "string",
+    :  "triviaAnswer":   "string"
+    :};
 
-RECTANGLE "Birthday List" as BirthdayList {
-}
+    |Backend (Azure Function + MongoDB)|
+    :Request Handling: Azure Function receives and parses JSON payload;
+    :Server-side Validation;
+    if (Valid?) then (yes)
+        :Persistence: Insert document into MongoDB using Birthday model;
+        :Response: On success;
+        :201 Created with JSON { "id": "<Mongo ObjectID>" };
+    else (no)
+        :Return 400 Bad Request with details { field: message };
+    endif
 
-RECTANGLE "Countdown Timer" as CountdownTimer {
-}
+    |Frontend (React)|
+    if (Success (201)) then (yes)
+        :Close <AddBirthdayForm> modal;
+        :Dispatch ADD_BIRTHDAY with new Person object;
+        :Update upcoming birthdays list in state;
+        :Start countdown timer for new entry;
+    else (Error (400))
+        :Parse field errors from response;
+        :Display inline errors;
+        :Return to step 3 to correct inputs;
+    endif
 
-User --> (1) : "Add Birthday"
-(1) --> BirthdayEntry : "Create Entry"
-BirthdayEntry --> BirthdayList : "Store Entry"
+    if (Error (5xx)) then (yes)
+        :Show global toast: "An unexpected error occurred. Please try again.";
+    endif
 
-User --> (2) : "View Upcoming Birthdays"
-(2) --> BirthdayList : "Retrieve Entries"
-BirthdayList --> CountdownTimer : "Generate Sorted Timers"
+else (invalid)
+    :Display inline error, prevent submission;
+endif
 
-User --> (3) : "Edit/Delete Entries"
-(3) --> BirthdayEntry : "Modify/Delete Entry"
-BirthdayEntry --> BirthdayList : "Update List"
-
+stop
 @enduml
 ```
